@@ -16,6 +16,7 @@ from urllib.parse import quote, urlencode
 from uuid import uuid4
 
 from .parsing import TherapieError
+from .calendar_export import appointment_times
 
 PREFERENCE_FIELDS = {'sender_name', 'sender_email', 'sender_phone', 'insurance', 'city', 'preferred_language'}
 STATUSES = {'shortlisted', 'contacted', 'waiting', 'appointment', 'not_available', 'declined', 'archived'}
@@ -72,6 +73,11 @@ class Store:
                 id TEXT PRIMARY KEY, profile_id TEXT NOT NULL REFERENCES shortlist(profile_id) ON DELETE CASCADE,
                 recipient TEXT NOT NULL, sender TEXT NOT NULL, subject TEXT NOT NULL, body TEXT NOT NULL,
                 created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS appointments(
+                id TEXT PRIMARY KEY, profile_id TEXT NOT NULL REFERENCES shortlist(profile_id) ON DELETE CASCADE,
+                title TEXT NOT NULL, starts_at TEXT NOT NULL, ends_at TEXT NOT NULL, timezone TEXT NOT NULL,
+                location TEXT NOT NULL, notes TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'scheduled',
+                revision INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS contacts(
                 id TEXT PRIMARY KEY, profile_id TEXT NOT NULL REFERENCES shortlist(profile_id) ON DELETE CASCADE,
                 channel TEXT NOT NULL, outcome TEXT NOT NULL, occurred_on TEXT NOT NULL,
@@ -143,7 +149,7 @@ class Store:
     def delete_therapist(self, profile_id: str) -> dict[str, Any]:
         with self.lock:
             deleted = self.conn.execute('DELETE FROM shortlist WHERE profile_id=?', (profile_id,)).rowcount
-        return {'deleted': bool(deleted), 'profile_id': profile_id, 'includes': 'local notes, drafts and contact history'}
+        return {'deleted': bool(deleted), 'profile_id': profile_id, 'includes': 'local notes, drafts, contact history and appointments'}
 
     def log_contact(self, profile_id: str, channel: str, outcome: str, occurred_on: str | None = None,
                     notes: str = '', follow_up_on: str | None = None) -> dict[str, Any]:
@@ -202,12 +208,58 @@ class Store:
             raise TherapieError('Contact record was not found.')
         return {'contact_id': contact_id, 'follow_up_completed': True}
 
+    def record_appointment(self, profile_id: str, starts_at: str, duration_minutes: int = 50,
+                           timezone: str = 'Europe/Berlin', title: str = 'Termin', location: str = '', notes: str = '') -> dict[str, Any]:
+        self.therapist(profile_id)
+        if not title.strip() or len(title) > 200 or len(location) > 500 or len(notes) > 10000:
+            raise TherapieError('Use a title of 1–200 characters, location up to 500 and notes up to 10000.')
+        start, end = appointment_times(starts_at, duration_minutes, timezone)
+        identifier, timestamp = uuid4().hex, now()
+        with self.lock:
+            self.conn.execute('''INSERT INTO appointments(id,profile_id,title,starts_at,ends_at,timezone,location,notes,created_at,updated_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?)''', (identifier, profile_id, title.strip(), start, end, timezone, location, notes, timestamp, timestamp))
+        return self.appointment(identifier)
+
+    def appointment(self, identifier: str) -> dict[str, Any]:
+        with self.lock:
+            row = self.conn.execute('SELECT * FROM appointments WHERE id=?', (identifier,)).fetchone()
+        if row is None:
+            raise TherapieError('Appointment was not found.')
+        return dict(row)
+
+    def appointments(self, profile_id: str | None = None, include_cancelled: bool = False) -> list[dict[str, Any]]:
+        with self.lock:
+            query, args = 'SELECT * FROM appointments WHERE 1=1', []
+            if profile_id is not None:
+                query += ' AND profile_id=?'
+                args.append(profile_id)
+            if not include_cancelled:
+                query += " AND status != 'cancelled'"
+            return [dict(row) for row in self.conn.execute(query + ' ORDER BY starts_at', args)]
+
+    def update_appointment(self, identifier: str, starts_at: str | None = None, duration_minutes: int | None = None,
+                           timezone: str | None = None, status: str | None = None,
+                           location: str | None = None, notes: str | None = None) -> dict[str, Any]:
+        old = self.appointment(identifier)
+        if status is not None and status not in {'scheduled', 'completed', 'cancelled'}:
+            raise TherapieError('Appointment status must be scheduled, completed or cancelled.')
+        if location is not None and len(location) > 500 or notes is not None and len(notes) > 10000:
+            raise TherapieError('Location must be at most 500 characters and notes at most 10000.')
+        duration = duration_minutes if duration_minutes is not None else int((datetime.fromisoformat(old['ends_at']) - datetime.fromisoformat(old['starts_at'])).total_seconds() / 60)
+        start, end = appointment_times(starts_at or old['starts_at'], duration, timezone or old['timezone'])
+        with self.lock:
+            self.conn.execute('''UPDATE appointments SET starts_at=?,ends_at=?,timezone=?,status=?,location=?,notes=?,
+                revision=revision+1,updated_at=? WHERE id=?''', (start, end, timezone or old['timezone'], status or old['status'],
+                old['location'] if location is None else location, old['notes'] if notes is None else notes, now(), identifier))
+        return self.appointment(identifier)
+
     def overview(self) -> dict[str, Any]:
         with self.lock:
             due = [dict(row) for row in self.conn.execute('''SELECT c.* FROM contacts c JOIN shortlist s ON s.profile_id=c.profile_id
                 WHERE c.follow_up_on <= ? AND s.status NOT IN ('archived','declined','not_available','appointment')
                 ORDER BY c.follow_up_on''', (date.today().isoformat(),))]
             return {'preferences': self.preferences(), 'shortlist': self.shortlist(), 'follow_ups_due': due,
+                    'appointments': self.appointments(),
                     'drafts': [dict(row) for row in self.conn.execute('SELECT id,profile_id,recipient,subject,updated_at FROM drafts ORDER BY updated_at DESC')]}
 
 

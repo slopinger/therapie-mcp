@@ -15,6 +15,7 @@ from . import __version__
 from .client import TherapieClient
 from .parsing import TherapieError
 from . import matching, workflow
+from .calendar_export import calendar_export
 from .workflow import Store
 
 READ_ONLY = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True)
@@ -27,7 +28,7 @@ page at a time, and inspect profiles with get_therapist before comparing billing
 reported availability. Always include source URLs and distinguish the directory's self-reported
 availability from a confirmed appointment. Use compare_therapists for explicit factual requirements,
 including approbation and billing, without claiming a clinical quality ranking. Use workflow_overview
-for the local shortlist, drafts and due follow-ups. Personal preferences and contact notes stay local.
+for the local shortlist, drafts, recorded appointments and due follow-ups. Personal preferences and contact notes stay local.
 Save profiles with save_therapist, then draft_enquiry creates an editable German or English enquiry.
 Review/edit with update_email_draft, export_email_draft to .eml or mailto, and send in the user's mail app.
 Drafting/export never sends or logs a contact. Record actual contacts with log_contact; complete old
@@ -206,6 +207,29 @@ def create_server(client: TherapieClient | None = None, store: Store | None = No
     def complete_follow_up(contact_id: str) -> dict[str, Any]:
         """Mark a recorded follow-up as resolved, removing it from the due list."""
         return _local(db().complete_follow_up, contact_id)
+
+    @server.tool(annotations=LOCAL_WRITE)
+    def record_appointment(profile_id: str, starts_at: str, duration_minutes: Annotated[int, Field(ge=1, le=480)] = 50,
+                           timezone: str = 'Europe/Berlin', title: str = 'Termin', location: str = '', notes: str = '') -> dict[str, Any]:
+        """Record a user-arranged appointment locally. ISO local time + IANA zone or explicit offset. Does not book/contact anyone."""
+        return _local(db().record_appointment, profile_id, starts_at, duration_minutes, timezone, title, location, notes)
+
+    @server.tool(annotations=LOCAL_READ)
+    def list_appointments(profile_id: str | None = None, include_cancelled: bool = False) -> dict[str, Any]:
+        """List locally recorded appointments in chronological order."""
+        return {'appointments': _local(db().appointments, profile_id, include_cancelled)}
+
+    @server.tool(annotations=LOCAL_WRITE)
+    def update_appointment(appointment_id: str, starts_at: str | None = None, duration_minutes: int | None = None,
+                           timezone: str | None = None, status: Literal['scheduled', 'completed', 'cancelled'] | None = None,
+                           location: str | None = None, notes: str | None = None) -> dict[str, Any]:
+        """Reschedule or update a local appointment record. Does not notify the practice."""
+        return _local(db().update_appointment, appointment_id, starts_at, duration_minutes, timezone, status, location, notes)
+
+    @server.tool(annotations=LOCAL_READ)
+    def export_appointment(appointment_id: str) -> dict[str, Any]:
+        """Return a private .ics calendar file for manual import. No booking or invitation is sent."""
+        return _local(calendar_export, _local(db().appointment, appointment_id))
 
     @server.tool(annotations=LOCAL_READ)
     def workflow_overview() -> dict[str, Any]:

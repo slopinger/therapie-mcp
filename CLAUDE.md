@@ -16,6 +16,8 @@ behavior, tools, data paths, tests or operations change; documentation is part o
 - Local DB: `~/.local/share/therapie-mcp/workflow.sqlite3`, override `--db` / `THERAPIE_MCP_DB`.
   Mode 0600 including WAL/SHM; new data directory 0700. Never commit real notes, drafts, DBs or credentials.
   Never add health histories or local notes to public search parameters automatically.
+- Appointment tools record user-arranged visits locally and export private .ics files; they never
+  book, invite or notify. Preserve timezone/DST validation, stable UIDs and revision counters.
 - Draft/export tools do not send or log a contact. Export returns editable .eml/mailto data for the
   user's mail app. No SMTP backend is currently implemented. Never infer a missing recipient address.
 - stdio is default; optional Streamable HTTP is loopback `127.0.0.1:8001/mcp`, without authentication.

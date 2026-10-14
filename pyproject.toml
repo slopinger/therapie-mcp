@@ -1,6 +1,6 @@
 [project]
 name = "therapie-mcp"
-version = "0.2.0"
+version = "0.3.0"
 description = "MCP server for therapie.de search, profile comparison, private shortlists and email drafting"
 readme = "README.md"
 authors = [{ name = "slop", email = "slop@freifick.net" }]

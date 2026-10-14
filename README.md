@@ -130,6 +130,16 @@ can contain private information; they remain on the machine running the MCP serv
 only through its tools. Public searches never automatically include these notes. Local deletion
 removes records, not a promise of forensic erasure from SQLite journals or filesystem backups.
 
+## Appointment records and calendar export
+
+`record_appointment` stores an appointment you have arranged, using an ISO date/time, duration and
+IANA timezone (default Europe/Berlin). `list_appointments` lists records; `update_appointment`
+reschedules or marks them completed/cancelled. Nothing books a visit or notifies the practice.
+`export_appointment` returns private `.ics` content for manual calendar import, with a stable UID,
+revision counter and UTC event times. The default title is simply “Termin”. Daylight-saving gaps
+are rejected; ambiguous local times require an explicit offset. Deleting a saved therapist also
+removes its appointment records. Back up the private workflow database if you need to preserve them.
+
 ## Data access and privacy
 
 The public-data tools read the same HTML pages as the website. It is not affiliated with therapie.de and does
