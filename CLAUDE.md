@@ -24,3 +24,5 @@ behavior, tools, data paths, tests or operations change; documentation is part o
   No publicly listening MCP service is installed on the server.
 - Check git status before changes/commits; do not absorb other sessions' work. Sign and push your
   changes to `git@git.freifick.net:slop/therapie-mcp.git`. Bump package/version together for releases.
+- Use small commits: one logical change per commit (with its tests/docs), each passing the checks above.
+  Don't bundle unrelated changes or a whole session's work into one commit.
