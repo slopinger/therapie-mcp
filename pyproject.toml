@@ -1,7 +1,7 @@
 [project]
 name = "therapie-mcp"
-version = "0.1.0"
-description = "MCP server for therapie.de therapist search, filters and public profiles"
+version = "0.2.0"
+description = "MCP server for therapie.de search, profile comparison, private shortlists and email drafting"
 readme = "README.md"
 authors = [{ name = "slop", email = "slop@freifick.net" }]
 requires-python = ">=3.11"

@@ -10,6 +10,7 @@ from urllib.parse import urlencode, urljoin
 
 import httpx
 
+from . import __version__
 from .parsing import BASE_URL, FILTERS, SEARCH_PATH, TherapieError, parse_filters, parse_profile, parse_search, profile_url, site_url
 
 MAX_RESPONSE_BYTES = 4 * 1024 * 1024
@@ -37,7 +38,7 @@ class TherapieClient:
                 return cached[1:]
             if self._http is None:
                 self._http = httpx.AsyncClient(timeout=20, follow_redirects=False, headers={
-                    'User-Agent': 'therapie-mcp/0.1 (+https://git.freifick.net/slop/therapie-mcp)',
+                    'User-Agent': f'therapie-mcp/{__version__} (+https://git.freifick.net/slop/therapie-mcp)',
                     'Accept': 'text/html', 'Accept-Language': 'de',
                 })
             current = url

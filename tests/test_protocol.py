@@ -10,7 +10,7 @@ async def test_stdio_handshake_and_tools():
             initialized = await session.initialize()
             assert initialized.server_info.name == 'therapie'
             listed = await session.list_tools()
-            assert {tool.name for tool in listed.tools} == {'get_search_filters', 'search_therapists', 'get_therapist'}
+            assert {'get_search_filters', 'search_therapists', 'get_therapist', 'draft_enquiry', 'workflow_overview'} <= {tool.name for tool in listed.tools}
             invalid = await session.call_tool('get_therapist', {'profile': 'https://evil.test/'})
             assert invalid.is_error
             assert "Only HTTPS" in invalid.content[0].text

@@ -162,6 +162,11 @@ def parse_profile(html: str, url: str) -> dict[str, Any]:
     email = _decode_email(contact['data-contact-email']) if contact else None
     if not email and email_link:
         email = unquote(email_link['href'][7:].split('?', 1)[0])
+    billing_node = main.select_one('#abrechnungsverfahren')
+    billing_text = text(billing_node)
+    billing = [part.strip() for part in (billing_text or '').split(',') if part.strip()]
+    qualifications = [value for value in sections.get('Ausbildung, Heilerlaubnis, Abrechnung', []) if value != billing_text]
+    languages = sections.get('Weitere Sprachen', sections.get('Sprachen', sections.get('Sprache', sections.get('Sprachen (weitere)', []))))
     website = scope.select_one('.contact-web a[href]')
     phone_link = scope.select_one('a[href^="tel:"]')
     updated = re.search(r'Letzte Änderung am\s+(\d{2}\.\d{2}\.\d{4})', main.get_text(' ', strip=True))
@@ -172,6 +177,7 @@ def parse_profile(html: str, url: str) -> dict[str, Any]:
         'phone_uri': phone_link['href'] if phone_link else None,
         'email': email, 'website': website['href'] if website else None,
         'qualifications_and_billing': sections.get('Ausbildung, Heilerlaubnis, Abrechnung', []),
+        'qualifications': qualifications, 'billing': billing, 'languages': languages,
         'focuses': sections.get('Behandlungs-Schwerpunkte', []),
         'methods': sections.get('Verfahren', []),
         'audiences': sections.get('Therapie-Angebot', []),
