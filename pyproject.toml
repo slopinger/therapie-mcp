@@ -3,7 +3,7 @@ name = "therapie-mcp"
 version = "0.3.0"
 description = "MCP server for therapie.de search, profile comparison, private shortlists and email drafting"
 readme = "README.md"
-authors = [{ name = "slop", email = "slop@freifick.net" }]
+authors = [{ name = "slop", email = "slopmoder@tutamail.com" }]
 requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE"]
