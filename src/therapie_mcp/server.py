@@ -80,7 +80,7 @@ def create_server(client: TherapieClient | None = None, store: Store | None = No
                 local_store.close()
 
     server = MCPServer(name='therapie', title='therapie.de Therapeutensuche', version=__version__,
-                       website_url='https://git.freifick.net/slop/therapie-mcp', instructions=INSTRUCTIONS,
+                       website_url='https://github.com/slopinger/therapie-mcp', instructions=INSTRUCTIONS,
                        lifespan=lifespan)
 
     @server.tool(annotations=READ_ONLY)

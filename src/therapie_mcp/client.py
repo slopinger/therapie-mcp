@@ -38,7 +38,7 @@ class TherapieClient:
                 return cached[1:]
             if self._http is None:
                 self._http = httpx.AsyncClient(timeout=20, follow_redirects=False, headers={
-                    'User-Agent': f'therapie-mcp/{__version__} (+https://git.freifick.net/slop/therapie-mcp)',
+                    'User-Agent': f'therapie-mcp/{__version__} (+https://github.com/slopinger/therapie-mcp)',
                     'Accept': 'text/html', 'Accept-Language': 'de',
                 })
             current = url

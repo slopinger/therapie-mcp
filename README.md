@@ -10,7 +10,7 @@ email drafts, mail-app exports, contact history and follow-up dates.
 With [uv](https://docs.astral.sh/uv/):
 
 ```sh
-git clone https://git.freifick.net/slop/therapie-mcp.git
+git clone https://github.com/slopinger/therapie-mcp.git
 cd therapie-mcp
 uv run therapie-mcp                    # MCP over stdio (default)
 uv run therapie-mcp --version
@@ -19,7 +19,7 @@ uv run therapie-mcp --version
 Or run directly from the public repository:
 
 ```sh
-uvx --from git+https://git.freifick.net/slop/therapie-mcp.git therapie-mcp
+uvx --from git+https://github.com/slopinger/therapie-mcp.git therapie-mcp
 ```
 
 Claude Code:
@@ -172,7 +172,7 @@ uv build                         # wheel and source distribution
 Fixtures use synthetic therapist details. Live tests check current filters, a filtered radius search
 and one result profile; they do not assert unstable result counts or copy profile content into the repo.
 
-MIT license. Source: https://git.freifick.net/slop/therapie-mcp.
+MIT license. Source: https://github.com/slopinger/therapie-mcp.
 
 ## Nix packaging
 
